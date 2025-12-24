@@ -8,6 +8,7 @@ from ultralytics import YOLO
 import mlflow
 from pathlib import Path
 from typing import Dict, List
+from mlflow.tracking import MlflowClient
 
 # =========================
 # CONFIG
@@ -60,14 +61,19 @@ model = None
 def load_model():
     global model
     print("🔥 Loading model from MLflow...")
-
+    client = MlflowClient()
     try:
-        model_uri = "models:/road-mark-yolo/Production"
+        model_uri = "models:/road-mark-yolo@production"
         print(f"📦 URI: {model_uri}")
         
         model_dir = mlflow.artifacts.download_artifacts(model_uri)
         print(f"📁 Downloaded to: {model_dir}")
-        
+        model_version = client.get_model_version_by_alias(
+            name="road-mark-yolo",
+            alias="production"
+        )
+        print(f"🏷️ Version {model_version.version} (alias: production)")
+        print(f"📊 Run ID: {model_version.run_id}")
         pt_files = list(Path(model_dir).rglob("*.pt"))
         
         if not pt_files:
