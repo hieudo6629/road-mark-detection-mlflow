@@ -1,3 +1,4 @@
+# train.py
 from ultralytics import YOLO
 
 model = YOLO("weights/yolov5n.pt")
@@ -11,7 +12,7 @@ results = model.train(
     device="cpu",
     project="runs/detect",
     name="train",
-    exist_ok=False   # mỗi lần là train2, train3...
+    exist_ok=False
 )
 
-print(f"Train done at: {results.save_dir}")
+print(f"✅ Train done at: {results.save_dir}")
