@@ -5,9 +5,9 @@ model = YOLO("weights/yolov5n.pt")
 
 results = model.train(
     data="data/data.yaml",
-    epochs=1,
-    imgsz=50,
-    batch=1,
+    epochs=2,
+    imgsz=480,
+    batch=2,
     workers=0,
     device="cpu",
     project="runs/detect",

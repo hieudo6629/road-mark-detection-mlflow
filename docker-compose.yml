@@ -102,6 +102,8 @@ services:
     depends_on:
       - mlflow
       - minio
+    volumes:
+      - ./api:/app/api
 volumes:
   postgres_data:
   minio_data:

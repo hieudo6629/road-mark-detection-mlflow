@@ -36,9 +36,10 @@ setup:
 # ============================
 # Docker Infrastructure
 # ============================
-start:
+start-first:
 	$(DOCKER_COMPOSE) up -d --build
-
+start:
+	$(DOCKER_COMPOSE) up -d
 stop:
 	$(DOCKER_COMPOSE) down
 
