@@ -6,3 +6,6 @@ logs/
 
 # Bỏ qua folder run
 runs/
+
+__pycache__/
+__pycache__\*

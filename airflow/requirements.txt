@@ -1,0 +1,2 @@
+# Airflow providers and dependencies
+apache-airflow-providers-docker==3.10.0
