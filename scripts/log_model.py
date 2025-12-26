@@ -71,9 +71,9 @@ with mlflow.start_run(run_name=latest_train_dir.name):
     # -----------------------------
     # LOG PARAMS (minimal & safe)
     # -----------------------------
-    mlflow.log_param("model_type", "yolov5n")
-    mlflow.log_param("imgsz", 50)
-    mlflow.log_param("batch", 1)
+    mlflow.log_param("model_type", "yolov8n")
+    mlflow.log_param("imgsz", 480)
+    mlflow.log_param("batch", 2)
     mlflow.log_param("epochs", "see yolo_run/results.csv")
 
     # -----------------------------

@@ -1,7 +1,7 @@
 # train.py
 from ultralytics import YOLO
 
-model = YOLO("weights/yolov5n.pt")
+model = YOLO("weights/yolov8n.pt")
 
 results = model.train(
     data="data/data.yaml",
