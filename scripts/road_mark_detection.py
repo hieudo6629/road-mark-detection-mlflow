@@ -12,7 +12,7 @@ results = model.train(
     device="cpu",
     project="runs/detect",
     name="train",
-    exist_ok=False
+    exist_ok=False,
 )
 
 print(f"✅ Train done at: {results.save_dir}")

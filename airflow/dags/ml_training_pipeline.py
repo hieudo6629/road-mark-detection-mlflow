@@ -11,10 +11,10 @@ from airflow import DAG
 from airflow.providers.docker.operators.docker import DockerOperator
 from docker.types import Mount
 
-# Get the project root directory (3 levels up from this DAG file)
-# DAG file is at: <project>/airflow/dags/ml_training_pipeline.py
-# Project root is: <project>/
-PROJECT_ROOT = str(Path(__file__).parent.parent.parent.absolute())
+# Get the project root directory from environment variable
+PROJECT_ROOT = os.getenv("PROJECT_ROOT_PATH")
+if not PROJECT_ROOT:
+    raise ValueError("PROJECT_ROOT_PATH environment variable is not set")
 
 # Default arguments for the DAG
 default_args = {
@@ -37,24 +37,42 @@ with DAG(
     tags=["ml", "yolo", "training", "mlflow"],
 ) as dag:
 
+    # Task 0: Build Docker image
+    build_image = DockerOperator(
+        task_id="build_image",
+        image="docker:latest",
+        api_version="auto",
+        auto_remove=True,
+        command="build -t road-mark-pipeline:latest -f Dockerfile.pipeline .",
+        docker_url="unix://var/run/docker.sock",
+        network_mode="road-mark-detection-mlflow_default",
+        mounts=[
+            Mount(
+                source=PROJECT_ROOT,
+                target="/workspace",
+                type="bind",
+            ),
+            Mount(
+                source="/var/run/docker.sock",
+                target="/var/run/docker.sock",
+                type="bind",
+            ),
+        ],
+        working_dir="/workspace",
+    )
+
     # Task 1: Train YOLO model
     train_yolo = DockerOperator(
         task_id="train_yolo",
-        image="python:3.11-slim",
+        image="road-mark-pipeline:latest",
         api_version="auto",
         auto_remove=True,
         command=[
             "bash",
             "-c",
             """
-            # set -e
-            # Install dependencies
-            pip install --no-cache-dir ultralytics mlflow boto3 psycopg2-binary
-            
-            # Run training script
             cd /workspace
             python scripts/road_mark_detection.py
-            
             echo "✅ Training completed successfully"
             """,
         ],
@@ -62,8 +80,8 @@ with DAG(
         network_mode="road-mark-detection-mlflow_default",  # Use the same network as docker-compose
         mounts=[
             Mount(
-                source=PROJECT_ROOT,
-                target="/workspace",
+                source=os.path.join(PROJECT_ROOT, "runs"),
+                target="/workspace/runs",
                 type="bind",
             )
         ],
@@ -79,21 +97,15 @@ with DAG(
     # Task 2: Log model to MLflow
     log_model = DockerOperator(
         task_id="log_model",
-        image="python:3.11-slim",
+        image="road-mark-pipeline:latest",
         api_version="auto",
         auto_remove=True,
         command=[
             "bash",
             "-c",
             """
-            set -e
-            # Install dependencies
-            pip install --no-cache-dir ultralytics mlflow boto3 psycopg2-binary
-            
-            # Run model logging script
             cd /workspace
             python scripts/log_model.py
-            
             echo "✅ Model logging completed successfully"
             """,
         ],
@@ -101,8 +113,8 @@ with DAG(
         network_mode="road-mark-detection-mlflow_default",
         mounts=[
             Mount(
-                source=PROJECT_ROOT,
-                target="/workspace",
+                source=os.path.join(PROJECT_ROOT, "runs"),
+                target="/workspace/runs",
                 type="bind",
             )
         ],
@@ -118,33 +130,21 @@ with DAG(
     # Task 3: Register model and promote to Production
     register_model = DockerOperator(
         task_id="register_model",
-        image="python:3.11-slim",
+        image="road-mark-pipeline:latest",
         api_version="auto",
         auto_remove=True,
         command=[
             "bash",
             "-c",
             """
-            # set -e
-            # Install dependencies
-            pip install --no-cache-dir mlflow boto3 psycopg2-binary
-            
-            # Run model registration script
             cd /workspace
             python scripts/register_model.py
-            
             echo "✅ Model registration completed successfully"
             """,
         ],
         docker_url="unix://var/run/docker.sock",
         network_mode="road-mark-detection-mlflow_default",
-        mounts=[
-            Mount(
-                source=PROJECT_ROOT,
-                target="/workspace",
-                type="bind",
-            )
-        ],
+        mounts=[],
         mount_tmp_dir=False,
         environment={
             "MLFLOW_TRACKING_URI": "http://mlflow:5000",
@@ -155,4 +155,4 @@ with DAG(
     )
 
     # Define task dependencies (sequential execution)
-    train_yolo >> log_model >> register_model
+    build_image >> train_yolo >> log_model >> register_model

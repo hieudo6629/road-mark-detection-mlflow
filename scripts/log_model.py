@@ -7,17 +7,23 @@ from ultralytics import YOLO
 # =========================================================
 # CONFIG
 # =========================================================
-MLFLOW_TRACKING_URI = "http://localhost:5000"
-MINIO_ENDPOINT = "http://localhost:9000"
+# Use environment variables with localhost as default
+MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000")
+MINIO_ENDPOINT = os.getenv("MLFLOW_S3_ENDPOINT_URL", "http://localhost:9000")
+AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID", "minio")
+AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY", "minio123")
 
 MODEL_NAME = "road-mark-yolo"
 EXPERIMENT_NAME = "road-mark-yolo"
 
-os.environ.update({
-    "MLFLOW_S3_ENDPOINT_URL": MINIO_ENDPOINT,
-    "AWS_ACCESS_KEY_ID": "minio",
-    "AWS_SECRET_ACCESS_KEY": "minio123"
-})
+# Set environment variables for MLflow S3 backend
+os.environ.update(
+    {
+        "MLFLOW_S3_ENDPOINT_URL": MINIO_ENDPOINT,
+        "AWS_ACCESS_KEY_ID": AWS_ACCESS_KEY_ID,
+        "AWS_SECRET_ACCESS_KEY": AWS_SECRET_ACCESS_KEY,
+    }
+)
 
 mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
 mlflow.set_experiment(EXPERIMENT_NAME)
@@ -27,7 +33,9 @@ mlflow.set_experiment(EXPERIMENT_NAME)
 # =========================================================
 RUNS_DIR = Path("runs/detect")
 
-train_dirs = [d for d in RUNS_DIR.iterdir() if d.is_dir() and d.name.startswith("train")]
+train_dirs = [
+    d for d in RUNS_DIR.iterdir() if d.is_dir() and d.name.startswith("train")
+]
 if not train_dirs:
     raise RuntimeError("❌ No YOLO training run found in runs/detect")
 
@@ -54,6 +62,7 @@ class YOLOv5Wrapper(mlflow.pyfunc.PythonModel):
         results = self.model(inputs)
         return results
 
+
 # =========================================================
 # LOG & REGISTER
 # =========================================================
@@ -70,21 +79,16 @@ with mlflow.start_run(run_name=latest_train_dir.name):
     # -----------------------------
     # LOG TRAINING ARTIFACTS
     # -----------------------------
-    mlflow.log_artifacts(
-        local_dir=str(latest_train_dir),
-        artifact_path="yolo_run"
-    )
+    mlflow.log_artifacts(local_dir=str(latest_train_dir), artifact_path="yolo_run")
 
     # -----------------------------
     # LOG MODEL (CRITICAL PART)
     # -----------------------------
     mlflow.pyfunc.log_model(
-        artifact_path="model",   # ⚠️ MUST BE "model"
+        artifact_path="model",  # ⚠️ MUST BE "model"
         python_model=YOLOv5Wrapper(),
-        artifacts={
-            "model_path": str(weights_path)
-        },
-        registered_model_name=MODEL_NAME
+        artifacts={"model_path": str(weights_path)},
+        registered_model_name=MODEL_NAME,
     )
 
 print("🎉 Model logged & registered successfully!")

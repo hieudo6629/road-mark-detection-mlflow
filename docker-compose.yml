@@ -80,6 +80,7 @@ services:
       - "3000:3000"
     volumes:
       - grafana_data:/var/lib/grafana
+      - ./config/grafana/provisioning:/etc/grafana/provisioning
   api:
     build:
       context: .
@@ -105,10 +106,12 @@ services:
       AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
       AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
       AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session'
+      AIRFLOW__WEBSERVER__SECRET_KEY: 'airflow_secret_key_change_this_in_production'
       _AIRFLOW_DB_MIGRATE: 'true'
       _AIRFLOW_WWW_USER_CREATE: 'true'
       _AIRFLOW_WWW_USER_USERNAME: ${AIRFLOW_ADMIN_USER:-admin}
       _AIRFLOW_WWW_USER_PASSWORD: ${AIRFLOW_ADMIN_PASSWORD:-admin}
+      PROJECT_ROOT_PATH: ${PROJECT_ROOT_PATH}
     user: "${AIRFLOW_UID:-50000}:0"
     volumes:
       - ./airflow/dags:/opt/airflow/dags
@@ -167,7 +170,9 @@ services:
       AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
       AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
       AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session'
+      AIRFLOW__WEBSERVER__SECRET_KEY: 'airflow_secret_key_change_this_in_production'
       AIRFLOW__WEBSERVER__EXPOSE_CONFIG: 'true'
+      PROJECT_ROOT_PATH: ${PROJECT_ROOT_PATH}
     user: "${AIRFLOW_UID:-50000}:0"
     volumes:
       - ./airflow/dags:/opt/airflow/dags
@@ -196,6 +201,8 @@ services:
       AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
       AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
       AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session'
+      AIRFLOW__WEBSERVER__SECRET_KEY: 'airflow_secret_key_change_this_in_production'
+      PROJECT_ROOT_PATH: ${PROJECT_ROOT_PATH}
     user: "${AIRFLOW_UID:-50000}:0"
     volumes:
       - ./airflow/dags:/opt/airflow/dags
